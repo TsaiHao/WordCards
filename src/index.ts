@@ -1,9 +1,9 @@
 import readline from 'readline';
 import fetch from 'node-fetch';
-import chalk from 'chalk';
 import sqlite3 from "sqlite3";
 import {open, Database} from "sqlite";
 import stream from 'stream';
+import express from 'express';
 
 const url = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 
@@ -32,7 +32,7 @@ async function removeWord(db: Database, word: string) {
 async function listAllWords(db: Database) {
     const rows = await db.all("SELECT * FROM words");
     for (const row of rows) {
-        console.log(chalk.blue(row.word));
+        console.log(row.word);
     }
 }
 
@@ -130,6 +130,42 @@ async function main() {
             }
         });
     }
+
+    let app = express();
+    app.get("/word/:word", (req, res) => {
+        const word = req.params.word;
+        console.log("querying word: " + word);
+
+        getWord(db, word).then((row) => {
+            if (row) {
+                res.json(JSON.parse(row.definition));
+            } else {
+                const fullUrl = url + word + "?key=" + process.env["DICT_KEY"];
+                fetch(fullUrl).then(response => response.json())
+                    .then((json) => {
+                        type FetchedData = WordObject[] | string[];
+                        function isWordObjectArray(data: FetchedData): data is WordObject[] {
+                            return (data as WordObject[])[0].fl !== undefined;
+                        }
+                        if (isWordObjectArray(json as FetchedData)) {
+                            res.json(json as WordObject[]);
+                            saveWord(db, word, JSON.stringify(json));
+                        } else {
+                            res.json(json);
+                        }
+                    })
+                    .catch(err => {
+                        res.status(500).send("Error fetching word: " + err);
+                    });
+            }
+        });
+    });
+
+    app.use(express.static('public'));
+
+    app.listen(12300, () => {
+        console.log("Server started on port 12300");
+    });
 
     loop();
 }

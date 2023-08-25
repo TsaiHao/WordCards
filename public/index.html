@@ -2,9 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>My Word List</title>
 </head>
 <body>
-
+<h1>List</h1>
+<div id="list"></div>
+<label for="word"></label><textarea id="word"></textarea>
+<button id="add">query</button>
+<script>
+    const port = 12300;
+    const url = `http://localhost:${port}/word`;
+    const button = document.getElementById('add');
+    const word = document.getElementById('word');
+    const list = document.getElementById('list');
+    button.addEventListener('click', () => {
+        fetch(url + "/" + word.value)
+            .then(response => response.json())
+            .then(data => {
+                alert(JSON.stringify(data));
+            })
+            .catch(error => {
+                console.log(error);
+            })
+    });
+</script>
 </body>
 </html>

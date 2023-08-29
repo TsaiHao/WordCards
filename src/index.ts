@@ -29,11 +29,8 @@ async function removeWord(db: Database, word: string) {
     await db.run("DELETE FROM words WHERE word = ?", [word]);
 }
 
-async function listAllWords(db: Database) {
-    const rows = await db.all("SELECT * FROM words");
-    for (const row of rows) {
-        console.log(row.word);
-    }
+async function listAllWords(db: Database): Promise<string[]> {
+    return await db.all("SELECT * FROM words");
 }
 
 interface WordObject {
@@ -62,7 +59,7 @@ async function main() {
         for (const word of wordJson) {
             console.log(`${headWord}: [${word.fl}]`);
             for (const def of word.shortdef) {
-                console.log(`  ${def}`);
+                console.log(` ${def}`);
             }
         }
     };
@@ -138,7 +135,9 @@ async function main() {
 
         getWord(db, word).then((row) => {
             if (row) {
-                res.json(JSON.parse(row.definition));
+                res.json({
+                    "result": "duplicate",
+                });
             } else {
                 const fullUrl = url + word + "?key=" + process.env["DICT_KEY"];
                 fetch(fullUrl).then(response => response.json())
@@ -148,16 +147,29 @@ async function main() {
                             return (data as WordObject[])[0].fl !== undefined;
                         }
                         if (isWordObjectArray(json as FetchedData)) {
-                            res.json(json as WordObject[]);
+                            res.json({
+                                "result": "new",
+                                "word": word,
+                                "definition": json as WordObject[],
+                            });
                             saveWord(db, word, JSON.stringify(json));
                         } else {
-                            res.json(json);
+                            res.json({
+                                "result": "spell_check",
+                                "suggestions": json
+                            });
                         }
                     })
                     .catch(err => {
                         res.status(500).send("Error fetching word: " + err);
                     });
             }
+        });
+    });
+
+    app.get("/list", (req, res) => {
+        listAllWords(db).then((words) => {
+            res.json(words);
         });
     });
 

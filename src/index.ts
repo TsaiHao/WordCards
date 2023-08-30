@@ -10,7 +10,7 @@ const url = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 async function openDB() {
     return open({
         filename: "./words.db",
-        driver: sqlite3.Database
+        driver: sqlite3.Database,
     }).then(async (db) => {
         await db.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT)");
         return db;
@@ -152,6 +152,7 @@ async function main() {
                                 "word": word,
                                 "definition": json as WordObject[],
                             });
+                            console.log("saving word: " + word);
                             saveWord(db, word, JSON.stringify(json));
                         } else {
                             res.json({
@@ -173,6 +174,19 @@ async function main() {
         });
     });
 
+    app.delete("/word/:word", (req, res) => {
+        const word = req.params.word;
+        try {
+            removeWord(db, word).then(() => {
+                console.log("deleted word: " + word);
+                res.json({
+                    "result": "success",
+                });
+            });
+        } catch (err) {
+            res.status(500).send("Error deleting word: " + err);
+        }
+    });
     app.use(express.static('public'));
 
     app.listen(12300, () => {

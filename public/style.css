@@ -12,6 +12,7 @@ body {
 }
 
 .card {
+    position: relative;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -22,6 +23,10 @@ body {
 .card h2 {
     font-size: 24px;
     margin-bottom: 10px;
+}
+
+.card h3 {
+    color: darkgray;
 }
 
 .card p {
@@ -79,4 +84,27 @@ body {
     margin-left: 1%;
     margin-top: 20px;
     vertical-align: top;
+}
+
+#add-word-button:hover {
+    background-color: #ddd;
+    cursor: pointer;
+}
+
+.delete-word-button {
+    position: absolute;
+    background-color: transparent;
+    border: none;
+    margin-left: 5px;
+    padding: 5px;
+    vertical-align: middle;
+    width: 24px;
+    height: 24px;
+    top: 0;
+    right: 0;
+}
+
+.delete-word-button:hover {
+    background-color: #ddd;
+    cursor: pointer;
 }

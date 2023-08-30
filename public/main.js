@@ -1,16 +1,46 @@
 const port = 12300;
 const url = `http://localhost:${port}`;
 
-const onCardClicked = async (event) => {
-    const word = event.target.querySelector('h2').textContent;
-    console.log(`Card clicked ${word}`);
-}
-
 const container = document.querySelector('.grid');
 let masonry = new Masonry(container, {
     itemSelector: '.grid-item',
     columnWidth: 10,
 });
+
+const onCardClicked = async (event) => {
+    const word = event.target.querySelector('h2').textContent;
+    console.log(`Card clicked ${word}`);
+}
+
+const onCardDeleteClicked = async (event) => {
+    event.stopPropagation();
+
+    let node = event.target;
+    while (node !== null && node.className !== "grid-item") {
+        node = node.parentNode;
+    }
+
+    if (!node) {
+        console.error("Delete button not found, parent class is ", item.className);
+        return;
+    }
+    const word = node.querySelector('h2').textContent;
+    console.log(`Card delete clicked ${word}`);
+
+    fetch(url + "/word/" + word, {
+        method: 'DELETE',
+    }).then(response => {
+        if (response.status !== 200) {
+            console.error("Failed to delete word", response.status);
+        }
+        return response.json();
+    }).then(json => {
+        if (json.result !== "success") {
+            console.error("Failed to delete word", json);
+        }
+    });
+    masonry.remove(node);
+}
 
 function makeCard(word, definition) {
     const card = document.createElement('div');
@@ -24,8 +54,21 @@ function makeCard(word, definition) {
     dictLink.textContent = word;
     title.appendChild(dictLink);
     card.appendChild(title);
+    const deleteButton = document.createElement('button');
+    deleteButton.className = "delete-word-button";
+    deleteButton.innerHTML = `
+      <svg viewBox="0 0 24 24">
+        <line x1="0" y1="0" x2="24" y2="24" stroke="black" stroke-width="2"></line>
+        <line x1="0" y1="24" x2="24" y2="0" stroke="black" stroke-width="2"></line>
+      </svg>
+    `;
+    deleteButton.addEventListener('click', onCardDeleteClicked);
+    card.appendChild(deleteButton);
 
-    for (const def of JSON.parse(definition)) {
+    if (typeof definition === 'string') {
+        definition = JSON.parse(definition);
+    }
+    for (const def of definition) {
         const h3 = document.createElement('h3');
         const fl = def.fl;
         h3.textContent = `[${fl}]`;
@@ -41,6 +84,7 @@ function makeCard(word, definition) {
     card.addEventListener('click', onCardClicked);
     return card;
 }
+
 
 fetch(url + "/list").then(response => {
     return response.json();

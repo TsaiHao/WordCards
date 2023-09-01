@@ -1,1 +1,5 @@
 /cache/
+/src/card_server/target/
+/node_modules/
+/.idea/
+/src/card_server/.idea/

@@ -3,20 +3,61 @@ const url = `http://localhost:${port}`;
 
 const container = document.querySelector('.grid');
 let masonry = new Masonry(container, {
-    itemSelector: '.grid-item',
+    itemSelector: '.card',
     columnWidth: 10,
 });
 
+let activeCard = null;
+
 const onCardClicked = async (event) => {
-    const word = event.target.querySelector('h2').textContent;
+    let element = event.target;
+    while (element !== null && !element.classList.contains("card")) {
+        element = element.parentNode;
+    }
+    if (!element) {
+        return
+    }
+    const word = element.querySelector('h2').textContent;
     console.log(`Card clicked ${word}`);
+
+    if (activeCard && activeCard !== element) {
+        activeCard.classList.remove("card-active");
+    }
+
+    if (element.classList.contains("card-active")) {
+        element.classList.remove("card-active");
+    } else {
+        activeCard = element;
+        element.classList.add("card-active");
+    }
 }
+
+addEventListener('keydown', (event) => {
+    if (event.ctrlKey) {
+        if (event.key === 'c') {
+            console.log("Ctrl+C pressed");
+            if (activeCard) {
+                fetch(url + "/ai/" + activeCard.querySelector('h2').textContent, {
+                    method: 'GET',
+                    headers: {
+                        word: activeCard.querySelector('h2').textContent,
+                        what: "HowToUse",
+                    }
+                }).then(response => {
+                    return response.json();
+                }).then(json => {
+                    console.log(json);
+                });
+            }
+        }
+    }
+})
 
 const onCardDeleteClicked = async (event) => {
     event.stopPropagation();
 
     let node = event.target;
-    while (node !== null && node.className !== "grid-item") {
+    while (node !== null && node.className !== "card") {
         node = node.parentNode;
     }
 
@@ -35,7 +76,7 @@ const onCardDeleteClicked = async (event) => {
         }
         return response.json();
     }).then(json => {
-        if (json.result !== "success") {
+        if (json.message !== "success") {
             console.error("Failed to delete word", json);
         }
     });
@@ -44,12 +85,12 @@ const onCardDeleteClicked = async (event) => {
 
 function makeCard(word, definition) {
     const card = document.createElement('div');
-    card.className = "grid-item";
+    card.className = "card";
 
     const title = document.createElement('h2');
     const dictLink = document.createElement('a');
     dictLink.className = "dict-link";
-    dictLink.href = `https://www.merriam-webster.com/dictionary/${word}`;
+    dictLink.href = `https://dictionary.cambridge.org/dictionary/english/${word}`;
     dictLink.target = "_blank";
     dictLink.textContent = word;
     title.appendChild(dictLink);
@@ -102,14 +143,20 @@ fetch(url + "/list").then(response => {
             fragment = document.createDocumentFragment();
         }
     }
+    if (cardRow.length > 0) {
+        container.appendChild(fragment);
+        masonry.appended(cardRow);
+    }
 });
 
 document.querySelector('#add-word-button').addEventListener('click', async () => {
     const newWord = document.querySelector('#new-word-input').value;
-    fetch(url + "/word/" + newWord).then(response => {
+    fetch(url + "/word/" + newWord, {
+        method: "PUT"
+    }).then(response => {
         return response.json();
     }).then(json => {
-        const result = json.result;
+        const result = json.message;
         if (result === "new") {
             console.log(`New word ${newWord}`);
             const card = makeCard(newWord, json.definition);

@@ -18,6 +18,15 @@ body {
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 14%;
+    transition: all 0.3s ease;
+}
+
+.card-active {
+    background-color: #e6f7ff;
+    border-color: #007BFF;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    z-index: 2;
 }
 
 .card h2 {
@@ -26,7 +35,7 @@ body {
 }
 
 .card h3 {
-    color: darkgray;
+    color: black;
 }
 
 .card p {
@@ -43,7 +52,7 @@ body {
 
 .grid {
     background: #EEE;
-    max-width: 90%;
+    max-width: 100%;
 }
 
 /* clearfix */
@@ -51,15 +60,6 @@ body {
     content: '';
     display: block;
     clear: both;
-}
-
-.grid-item {
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 15%;
 }
 
 #new-word-input {

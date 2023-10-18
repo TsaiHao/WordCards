@@ -1,0 +1,116 @@
+body {
+    background-color: #FAF3E0;
+    color: #333333;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.words-list {
+    width: 30%;
+    border-right: 1px solid #ccc;
+    padding: 20px;
+    top: 0;
+    position: sticky;
+    z-index: 1000;
+    height: 100vh;
+}
+
+.word-item {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.word-item-active {
+    background-color: #FFDAB9;
+}
+
+.word-item:hover {
+    background-color: #FFDAB9;
+}
+
+.word-detail {
+    width: 65%;
+    padding: 20px;
+}
+
+#word-descriptions > p {
+    font-size: 20px;
+}
+
+#word-descriptions a {
+    color: #333333;
+}
+
+#word-title-container {
+    display: flex;
+    align-items: center;
+}
+
+#word-title-container > :first-child {
+    margin-right: auto;
+}
+
+#word-title {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.word-stems {
+    font-weight: bold;
+}
+
+.word-vis {
+    font-style: italic;
+}
+
+.dictionary-svg {
+    height: 75px;
+    width: auto;
+    padding-left: 3%;
+}
+
+.add-word-container {
+    align-items: center;
+    display: flex;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    position: sticky;
+    z-index: 1000;
+    top: 0;
+    background-color: #EAE3D0;
+    height: 60px;
+    font-size: 30px;
+}
+
+#new-word-input {
+    margin-left: 40%;
+    font-size: inherit;
+}
+
+#add-word-button {
+    margin-left: 2%;
+    width: 8%;
+    font-size: inherit;
+}
+
+#add-word-result {
+    margin-left: 2%;
+    width: 50%;
+    font-size: inherit;
+    font-weight: bold;
+}
+
+.delete-word-button {
+    margin-left: 90%;
+    font-size: 30px;
+    background-color: transparent;
+    border-width: thick;
+}
+
+#word-ai-assistance {
+    font-size: 20px;
+}

@@ -6,12 +6,23 @@ import OpenAI from 'OpenAI';
 
 const url = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 
+let recycleBinDB: Database | undefined = undefined;
+
 async function openDB() {
     const db = await open({
         filename: "./words.db",
         driver: sqlite3.Database,
     });
     await db.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT)");
+    await db.run("CREATE TABLE IF NOT EXISTS ai (word TEXT PRIMARY KEY, explanation TEXT)");
+
+    recycleBinDB = await open({
+        filename: "./history.db",
+        driver: sqlite3.Database,
+    });
+    await recycleBinDB.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT)");
+    await recycleBinDB.run("CREATE TABLE IF NOT EXISTS ai (word TEXT PRIMARY KEY, explanation TEXT)");
+
     return db;
 }
 
@@ -19,12 +30,26 @@ async function saveWord(db: Database, word: string, definition: string) {
     await db.run("INSERT INTO words (word, definition) VALUES (?, ?)", [word, definition]);
 }
 
+async function saveAI(db: Database, word: string, explanation: string) {
+    await db.run("INSERT INTO ai (word, explanation) VALUES (?, ?)", [word, explanation]);
+}
+
 async function getWord(db: Database, word: string) {
     return await db.get("SELECT * FROM words WHERE word = ?", [word]);
 }
 
+async function getAI(db: Database, word: string) {
+    return await db.get("SELECT * FROM ai WHERE word = ?", [word]);
+}
+
 async function removeWord(db: Database, word: string) {
     await db.run("DELETE FROM words WHERE word = ?", [word]);
+    await recycleBinDB?.run("INSERT INTO words (word, definition) VALUES (?, ?)", [word, JSON.stringify(await getWord(db, word))]);
+}
+
+async function removeAI(db: Database, word: string) {
+    await db.run("DELETE FROM ai WHERE word = ?", [word]);
+    await recycleBinDB?.run("INSERT INTO ai (word, explanation) VALUES (?, ?)", [word, JSON.stringify(await getAI(db, word))]);
 }
 
 async function listAllWords(db: Database): Promise<string[]> {
@@ -46,7 +71,11 @@ enum AIType {
     HowToUse,
 }
 
-async function ai(word: string, type: AIType): Promise<string> {
+async function ai(db: Database, word: string, type: AIType): Promise<string> {
+    const row = await getAI(db, word);
+    if (row) {
+        return row.explanation;
+    }
     if (!process.env["OPENAI_KEY"]) {
         throw new Error("Please set the environment variable OPENAI_KEY");
     }
@@ -63,17 +92,30 @@ async function ai(word: string, type: AIType): Promise<string> {
             apiKey: aiKey,
             baseURL: url,
         });
-        const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+        return openai.chat.completions.create({
+            model: "gpt-4",
             messages: [
                 {
                     "role": "user",
-                    "content": "How to use the word " + word + "?",
+                    "content": String.raw`Please provide a guide on using the word advocate for Chinese speakers. Keep it concise and web-friendly. Include: 
+                        <ul>
+                            <li><strong>Synonyms and Antonyms:</strong> Offer a brief list.</li>
+                            <li><strong>Context:</strong> In what settings is the word commonly used?</li>
+                            <li><strong>Idioms or Phrases:</strong> Mention if the word is part of any idioms or phrases.</li>
+                            <li><strong>Chinese Meaning:</strong> Provide the corresponding Chinese word.</li>
+                            <li><strong>Tips:</strong> Share quick tips for remembering or using the word.</li>
+                        </ul>
+                        Avoid using line breaks like "\\n", use "<br\>" instead. Use HTML tags like <strong> and <ul> or <li> for formatting and organization. Thank you!`,
                 }
             ]
-        });
-
-        return completion.choices[0].message.content ?? "Error response";
+        }).then((completion) => {
+            const response = completion.choices[0].message.content;
+            if (response) {
+                saveAI(db, word, response);
+                return response;
+            }
+            return "AI Error";
+        })
     } catch (err) {
         console.log("Error: " + err);
         return "Error: " + err;
@@ -149,17 +191,19 @@ async function main() {
     app.delete("/word/:word", (req, res) => {
         const word = req.params.word;
         try {
+            removeAI(db, word);
             removeWord(db, word).then(() => {
                 console.log("deleted word: " + word);
                 res.json({
                     "message": "success",
                 });
             });
+
         } catch (err) {
             res.status(500).send("Error deleting word: " + err);
         }
     });
-    app.use(express.static('public'));
+    app.use(express.static('ui_html'));
 
     app.listen(12300, () => {
         console.log("Server started on port 12300");
@@ -177,7 +221,7 @@ async function main() {
         }
 
         console.log("requesting ai with word: " + word + " and type: " + what);
-        ai(word, aiType).then((response) => {
+        ai(db, word, aiType).then((response) => {
             res.status(200).json({
                 "message": response,
             })

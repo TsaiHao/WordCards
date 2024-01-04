@@ -108,11 +108,50 @@ function showDetail(word) {
         }
         response.json().then(json => {
             aiDiv.innerHTML = "";
-            let msg = json.message;
-            msg = msg.replace(/\n/g, "<br/>");
-            msg = msg.replace(/<br\/?> *(?:<br\/?>)*/g, "<br/>");
-            msg = msg.replace(/<br\/?> ?<div/g, "<div");
-            aiDiv.innerHTML = msg;
+            let ai = JSON.parse(json.message);
+            if (ai.synonyms) {
+                const synonyms = document.createElement('p');
+                synonyms.classList.add("word-synonyms");
+                synonyms.innerHTML = `<b>Synonyms:</b> ${ai.synonyms.join(", ")}`;
+                aiDiv.appendChild(synonyms);
+            }
+            if (ai.antonyms) {
+                const antonyms = document.createElement('p');
+                antonyms.classList.add("word-antonyms");
+                antonyms.innerHTML = `<b>Antonyms:</b> ${ai.antonyms.join(", ")}`;
+                aiDiv.appendChild(antonyms);
+            }
+            if (ai.context) {
+                const context = document.createElement('p');
+                context.classList.add("word-context");
+                context.innerHTML = `<b>Context:</b> ${ai.context}`;
+                aiDiv.appendChild(context);
+            }
+            if (ai.idioms_or_phrases) {
+                const idioms = document.createElement('p');
+                idioms.classList.add("word-idioms");
+                idioms.innerHTML = `<b>Idioms:</b> ${ai.idioms_or_phrases.join(", ")}`;
+                aiDiv.appendChild(idioms);
+            }
+            if (ai.chinese_meaning) {
+                const chinese = document.createElement('p');
+                chinese.classList.add("word-chinese");
+                chinese.innerHTML = `<b>Chinese:</b> ${ai.chinese_meaning}`;
+                aiDiv.appendChild(chinese);
+            }
+            if (ai.tips) {
+                const tips = document.createElement('div');
+                tips.classList.add("word-tips");
+                tips.innerHTML = `<b>Tips:</b><br/>`;
+                const ul = document.createElement('ul');
+                for (const tip of ai.tips) {
+                    const li = document.createElement('li');
+                    li.innerText = tip;
+                    ul.appendChild(li);
+                }
+                tips.appendChild(ul);
+                aiDiv.appendChild(tips);
+            }
         });
     })
 

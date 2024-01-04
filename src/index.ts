@@ -93,19 +93,57 @@ async function ai(db: Database, word: string, type: AIType): Promise<string> {
             baseURL: url,
         });
         return openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-3.5-turbo",
             messages: [
                 {
                     "role": "user",
-                    "content": String.raw`Please provide a guide on using the word advocate for Chinese speakers. Keep it concise and web-friendly. Include: 
-                        <ul>
-                            <li><strong>Synonyms and Antonyms:</strong> Offer a brief list.</li>
-                            <li><strong>Context:</strong> In what settings is the word commonly used?</li>
-                            <li><strong>Idioms or Phrases:</strong> Mention if the word is part of any idioms or phrases.</li>
-                            <li><strong>Chinese Meaning:</strong> Provide the corresponding Chinese word.</li>
-                            <li><strong>Tips:</strong> Share quick tips for remembering or using the word.</li>
-                        </ul>
-                        Avoid using line breaks like "\\n", use "<br\>" instead. Use HTML tags like <strong> and <ul> or <li> for formatting and organization. Thank you!`,
+                    "content": String.raw`Please provide a guide on using the word ${word} for Chinese speakers. Response should be in json and adhering to the following json-schema:
+                        {
+                          "$schema": "http://json-schema.org/draft-07/schema#",
+                          "type": "object",
+                          "properties": {
+                            "synonyms": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Synonyms for the word"
+                            },
+                            "antonyms": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Antonyms for the word"
+                            },
+                            "context": {
+                              "type": "string",
+                              "description": "Situations where the word is commonly used"
+                            },
+                            "idioms_or_phrases": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Idioms or phrases incorporating the word"
+                            },
+                            "chinese_meaning": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Corresponding Chinese terms for each meaning of the word"
+                            },
+                            "tips": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Tips for effectively using or remembering the word"
+                            }
+                          },
+                          "required": ["synonyms", "antonyms", "context", "chinese_meaning", "tips"]
+                        }`,
                 }
             ]
         }).then((completion) => {

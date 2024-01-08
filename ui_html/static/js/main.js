@@ -1,9 +1,5 @@
-const port = 12300;
-const url = `http://localhost:${port}`;
-
 let AllList = {};
 let ActiveWordDiv = null;
-let AIFetchController = new AbortController();
 
 function convertToHTML(inputString) {
     let htmlString = inputString;
@@ -44,7 +40,7 @@ function selectWord(word) {
 }
 
 async function deleteWord (word) {
-    const response = await fetch(url + "/word/" + word, {
+    const response = await fetch("/word/" + word, {
         method: 'DELETE',
     });
     if (response.status !== 200) {
@@ -88,72 +84,6 @@ function showDetail(word) {
     websterIcon.parentNode.href = `https://www.merriam-webster.com/dictionary/${word}`;
     const cambridgeIcon = document.getElementById("cambridge-icon");
     cambridgeIcon.parentNode.href = `https://dictionary.cambridge.org/dictionary/english/${word}`;
-
-    AIFetchController.abort();
-    AIFetchController = new AbortController();
-
-    const aiDiv = document.getElementById("word-ai-assistance");
-    aiDiv.innerHTML = "Loading...";
-    fetch(url + "/ai/" + word, {
-        method: "GET",
-        headers: {
-            what: "HowToUse",
-            word: word,
-        },
-        signal: AIFetchController.signal,
-    }).then(response => {
-        if (response.status !== 200) {
-            console.error("Failed to get word", response.status);
-            return;
-        }
-        response.json().then(json => {
-            aiDiv.innerHTML = "";
-            let ai = JSON.parse(json.message);
-            if (ai.synonyms) {
-                const synonyms = document.createElement('p');
-                synonyms.classList.add("word-synonyms");
-                synonyms.innerHTML = `<b>Synonyms:</b> ${ai.synonyms.join(", ")}`;
-                aiDiv.appendChild(synonyms);
-            }
-            if (ai.antonyms) {
-                const antonyms = document.createElement('p');
-                antonyms.classList.add("word-antonyms");
-                antonyms.innerHTML = `<b>Antonyms:</b> ${ai.antonyms.join(", ")}`;
-                aiDiv.appendChild(antonyms);
-            }
-            if (ai.context) {
-                const context = document.createElement('p');
-                context.classList.add("word-context");
-                context.innerHTML = `<b>Context:</b> ${ai.context}`;
-                aiDiv.appendChild(context);
-            }
-            if (ai.idioms_or_phrases) {
-                const idioms = document.createElement('p');
-                idioms.classList.add("word-idioms");
-                idioms.innerHTML = `<b>Idioms:</b> ${ai.idioms_or_phrases.join(", ")}`;
-                aiDiv.appendChild(idioms);
-            }
-            if (ai.chinese_meaning) {
-                const chinese = document.createElement('p');
-                chinese.classList.add("word-chinese");
-                chinese.innerHTML = `<b>Chinese:</b> ${ai.chinese_meaning}`;
-                aiDiv.appendChild(chinese);
-            }
-            if (ai.tips) {
-                const tips = document.createElement('div');
-                tips.classList.add("word-tips");
-                tips.innerHTML = `<b>Tips:</b><br/>`;
-                const ul = document.createElement('ul');
-                for (const tip of ai.tips) {
-                    const li = document.createElement('li');
-                    li.innerText = tip;
-                    ul.appendChild(li);
-                }
-                tips.appendChild(ul);
-                aiDiv.appendChild(tips);
-            }
-        });
-    })
 
     descriptions.innerHTML = "";
 
@@ -229,7 +159,7 @@ function makeWordItem(word) {
 }
 
 async function addWord(word) {
-    fetch(url + "/word/" + word, {
+    fetch("/word/" + word, {
         method: "PUT"
     }).then(response => {
         return response.json();
@@ -277,7 +207,7 @@ document.getElementById("new-word-input").addEventListener('keyup', async (e) =>
     }
 });
 
-fetch(url + "/list").then(response => {
+fetch("/list").then(response => {
     return response.json();
 }).then(json => {
     json.sort((a, b) => {

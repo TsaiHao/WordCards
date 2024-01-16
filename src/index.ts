@@ -2,7 +2,6 @@ import fetch from 'node-fetch';
 import sqlite3 from "sqlite3";
 import {open, Database} from "sqlite";
 import express from 'express';
-import OpenAI from 'openai';
 
 const url = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 
@@ -62,7 +61,7 @@ async function main() {
 
     let app = express();
     app.get("/word/:word", (req, res) => {
-        const word = req.params.word;
+        const word = req.params.word.toLowerCase();
         console.log("querying word: " + word);
 
         getWord(db, word).then((row) => {
@@ -82,7 +81,7 @@ async function main() {
     });
 
     app.put("/word/:word", (req, res) => {
-        const word = req.params.word;
+        const word = req.params.word.toLowerCase();
         console.log(`Adding word [${word}] from ip ${req.ip}`);
 
         getWord(db, word).then((row) => {
@@ -121,7 +120,7 @@ async function main() {
     });
 
     app.delete("/word/:word", (req, res) => {
-        const word = req.params.word;
+        const word = req.params.word.toLowerCase();
         try {
             // removeAI(db, word);
             console.log(`Deleting word [${word}] from ip ${req.ip}`);

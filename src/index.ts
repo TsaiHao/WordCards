@@ -2,43 +2,11 @@ import fetch from 'node-fetch';
 import sqlite3 from "sqlite3";
 import {open, Database} from "sqlite";
 import express from 'express';
+import cors from 'cors';
 
 const url = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 
 let recycleBinDB: Database | undefined = undefined;
-
-async function openDB() {
-    const db = await open({
-        filename: "./words.db",
-        driver: sqlite3.Database,
-    });
-    await db.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT)");
-
-    recycleBinDB = await open({
-        filename: "./history.db",
-        driver: sqlite3.Database,
-    });
-    await recycleBinDB.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT)");
-
-    return db;
-}
-
-async function saveWord(db: Database, word: string, definition: string) {
-    await db.run("INSERT INTO words (word, definition) VALUES (?, ?)", [word, definition]);
-}
-
-async function getWord(db: Database, word: string) {
-    return await db.get("SELECT * FROM words WHERE word = ?", [word]);
-}
-
-async function removeWord(db: Database, word: string) {
-    await db.run("DELETE FROM words WHERE word = ?", [word]);
-    await recycleBinDB?.run("INSERT INTO words (word, definition) VALUES (?, ?)", [word, JSON.stringify(await getWord(db, word))]);
-}
-
-async function listAllWords(db: Database): Promise<string[]> {
-    return await db.all("SELECT * FROM words");
-}
 
 interface WordObject {
     fl: string;
@@ -51,6 +19,48 @@ interface WordResponse {
     message: string;
 }
 
+interface DatabaseItem {
+    word: string;
+    definition: string;
+    date: string;
+}
+
+async function openDB() {
+    const db = await open({
+        filename: "./words.db",
+        driver: sqlite3.Database,
+    });
+    await db.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT, date TEXT)");
+
+    recycleBinDB = await open({
+        filename: "./history.db",
+        driver: sqlite3.Database,
+    });
+    await recycleBinDB.run("CREATE TABLE IF NOT EXISTS words (word TEXT PRIMARY KEY, definition TEXT, date TEXT)");
+
+    return db;
+}
+
+async function saveWord(db: Database, word: string, definition: string) {
+    await db.run("INSERT INTO words (word, definition, date) VALUES (?, ?, ?)", [word, definition, new Date().toISOString()]);
+}
+
+async function getWord(db: Database, word: string): Promise<DatabaseItem | undefined> {
+    return await db.get("SELECT * FROM words WHERE word = ?", [word]);
+}
+
+async function removeWord(db: Database, word: string) {
+    const existingWord = await getWord(db, word);
+    if (existingWord) {
+        await recycleBinDB?.run("INSERT INTO words (word, definition, date) VALUES (?, ?, ?)", [word, existingWord.definition, new Date().toISOString()]);
+        await db.run("DELETE FROM words WHERE word = ?", [word]);
+    }
+}
+
+async function listAllWords(db: Database): Promise<DatabaseItem[]> {
+    return await db.all("SELECT * FROM words");
+}
+
 async function main() {
     if (!process.env["DICT_KEY"]) {
         console.log("Please set the environment variable DICT_KEY");
@@ -60,15 +70,21 @@ async function main() {
     const db = await openDB();
 
     let app = express();
+    app.use(cors());
+
     app.get("/word/:word", (req, res) => {
         const word = req.params.word.toLowerCase();
         console.log("querying word: " + word);
 
-        getWord(db, word).then((row) => {
-            if (row) {
+        getWord(db, word).then((item) => {
+            if (item) {
                 res.status(200).json(
-                    row
+                    item
                 );
+            } else {
+                res.status(404).json({
+                    "message": "not_found",
+                });
             }
         });
     });
@@ -76,7 +92,10 @@ async function main() {
     app.get("/list", (req, res) => {
         listAllWords(db).then((words) => {
             console.log(`Requesting word list from ip ${req.ip}`)
-            res.status(200).json(words);
+            const items = words.map((row) => {
+                return row.word;
+            });
+            res.status(200).json(items);
         });
     });
 
@@ -136,7 +155,7 @@ async function main() {
             res.status(500).send("Error deleting word: " + err);
         }
     });
-    app.use(express.static('ui_html'));
+    //app.use(express.static('ui_html'));
 
     const port = 5678;
     app.listen(port, () => {

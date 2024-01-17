@@ -141,7 +141,6 @@ async function main() {
     app.delete("/word/:word", (req, res) => {
         const word = req.params.word.toLowerCase();
         try {
-            // removeAI(db, word);
             console.log(`Deleting word [${word}] from ip ${req.ip}`);
 
             removeWord(db, word).then(() => {
@@ -150,7 +149,6 @@ async function main() {
                     "message": "success",
                 });
             });
-
         } catch (err) {
             res.status(500).send("Error deleting word: " + err);
         }

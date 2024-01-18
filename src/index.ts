@@ -72,7 +72,7 @@ async function main() {
     let app = express();
     app.use(cors());
 
-    app.get("/word/:word", (req, res) => {
+    app.get("/api/word/:word", (req, res) => {
         const word = req.params.word.toLowerCase();
         console.log("querying word: " + word);
 
@@ -89,7 +89,7 @@ async function main() {
         });
     });
 
-    app.get("/list", (req, res) => {
+    app.get("/api/list", (req, res) => {
         listAllWords(db).then((words) => {
             console.log(`Requesting word list from ip ${req.ip}`)
             const items = words.map((row) => {
@@ -99,7 +99,7 @@ async function main() {
         });
     });
 
-    app.put("/word/:word", (req, res) => {
+    app.put("/api/word/:word", (req, res) => {
         const word = req.params.word.toLowerCase();
         console.log(`Adding word [${word}] from ip ${req.ip}`);
 
@@ -138,7 +138,7 @@ async function main() {
         });
     });
 
-    app.delete("/word/:word", (req, res) => {
+    app.delete("/api/word/:word", (req, res) => {
         const word = req.params.word.toLowerCase();
         try {
             console.log(`Deleting word [${word}] from ip ${req.ip}`);
